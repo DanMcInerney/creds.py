@@ -5,9 +5,6 @@ import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 conf.verb=0
-#Below is necessary to receive a response to the DHCP packets because
-#we're sending to 255.255.255.255 but receiving from the IP of the DHCP server
-conf.checkIPaddr=0
 from sys import exit
 import argparse
 import signal
@@ -67,26 +64,24 @@ class Parser:
             elif self.dport == 6667:
                 """ IRC """
                 port = 6667
-                #self.prev_pkt[port] = self.frag_joiner(port)
-                #self.headers, self.body = self.headers_body(self.prev_pkt[port][self.ack])
-                self.header_lines = self.hb_parse(port)
+                self.header_lines = self.hb_parse(port) # Join fragmented pkts
                 return self.irc(port)
 
             elif self.dport == 21 or self.sport == 21:
                 """ FTP """
                 port = 21
-                self.prev_pkt[port] = self.frag_joiner(port)
+                self.prev_pkt[port] = self.frag_joiner(port) # No headers in FTP so no need for hb_parse
                 self.ftp(port)
 
             elif self.dport == 25 or self.dport == 26:
                 port = self.dport
-                self.header_lines = self.hb_parse(port)
+                self.header_lines = self.hb_parse(port) # Join fragmented pkts
                 self.email_parser('', 'Outgoing', '')
 
             elif self.sport == 110 or self.dport == 110:
                 """ POP3 """
                 port = 110
-                self.header_lines = self.hb_parse(port)
+                self.header_lines = self.hb_parse(port) # Join fragmented pkts
                 if self.dport == 110:
                     self.mail_pw(port)
                 if self.sport == 110:
@@ -95,8 +90,7 @@ class Parser:
             elif self.sport == 143 or self.dport == 143:
                 """ IMAP """
                 port = 143
-                #Fragment concatenator + header and body definer
-                self.header_lines = self.hb_parse(port)
+                self.header_lines = self.hb_parse(port) # Join fragmented pkts
                 if self.dport == 143:
                     self.mail_pw(port)
                 if self.sport == 143:
@@ -382,6 +376,7 @@ def main(args):
 
     parser = Parser(args)
 
+    # Read from pcap file
     if args.pcap:
         pcap = rdpcap(args.pcap)
         for pkt in pcap:
@@ -392,9 +387,9 @@ def main(args):
                 print '%s: %s' % (k, v)
         exit('[*] Finished parsing pcap file')
 
-    #Find the active interface
     if args.interface:
        conf.iface = args.interface
+    #Find the active interface
     else:
         try:
             ipr = Popen(['/sbin/ip', 'route'], stdout=PIPE, stderr=DN)
