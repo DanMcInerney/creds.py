@@ -8,6 +8,8 @@ Harvest FTP/POP/IMAP/HTTP/IRC credentials along with interesting data from each 
 python creds.py [-i INTERFACE] [-v] [-p PCAPFILE]
 ```
 
+Requires: python 2.7, scapy python module, linux
+
 
 ### Info gathered:
 FTP
