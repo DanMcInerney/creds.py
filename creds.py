@@ -371,9 +371,6 @@ class Parser:
 ##################################################
 def main(args):
 
-    if geteuid():
-        exit('[-] Please run as root')
-
     parser = Parser(args)
 
     # Read from pcap file
@@ -386,6 +383,9 @@ def main(args):
             for v in parser.logins[k]:
                 print '%s: %s' % (k, v)
         exit('[*] Finished parsing pcap file')
+
+    if geteuid():
+        exit('[-] Please run as root for reading from interface')
 
     if args.interface:
        conf.iface = args.interface
