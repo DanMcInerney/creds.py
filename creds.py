@@ -414,6 +414,6 @@ def main(args):
 
     sniff(iface=conf.iface, prn=parser.pkt_sorter, store=0)
 
-
-main(parse_args())
+if __name__ == "__main__":
+   main(parse_args())
 
