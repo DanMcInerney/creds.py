@@ -129,9 +129,9 @@ class Parser:
         return 0
 
 
-##################################################
-#                    MAIL                        #
-##################################################
+    ##################################################
+    #                    MAIL                        #
+    ##################################################
     def email_parser(self, first_line, inout, proto):
         """The email module was not giving me what I wanted"""
         mail_header_finder = ['To: ', 'From: ', 'Date: ', 'Subject: ']
@@ -168,10 +168,6 @@ class Parser:
         if auth == 1:
             user, pw = load, 0
             found = self.logins_check(port, user, pw)
-            # This is slightly different from how we're printing HTTP user/pw and is so we don't spam
-            # output with mail passwords which get sent frequently
-            if found:
-                return 0
             print '[%s] %s auth: %s' % (self.src, proto, load)
             self.b64decode(load, port)
             return 0
@@ -191,9 +187,9 @@ class Parser:
             decoded = decoded.split()
             found = self.logins_check(port, decoded[0], decoded[1])
 
-##################################################
-#                    HTTP                        #
-##################################################
+    ##################################################
+    #                    HTTP                        #
+    ##################################################
     def http_parser(self, port):
 
         url = None
@@ -296,9 +292,9 @@ class Parser:
             return unquote(searched).replace('+', ' ')
 
 
-##################################################
-#                     FTP                        #
-##################################################
+    ##################################################
+    #                     FTP                        #
+    ##################################################
     def ftp(self, port):
         """Catch FTP usernames, passwords, and servers"""
         load = self.load.replace('\r\n', '')
@@ -326,9 +322,9 @@ class Parser:
             resp = load
             print '[%s > %s] FTP response:' % (self.src, self.dest), resp
 
-##################################################
-#                     IRC                        #
-##################################################
+    ##################################################
+    #                     IRC                        #
+    ##################################################
     def irc(self, port):
         """Catch IRC nicks, passwords, joins, parts, quits, messages"""
         load = self.load.split('\r\n')[0]
@@ -365,41 +361,52 @@ class Parser:
             ircquit = load.strip('QUIT :')
             print '[%s > %s] IRC quit: %s' % (self.src, self.dest, ircquit)
 
+def pcap_parser(pcap_file):
+    try:
+        pcap = rdpcap(args.pcap)
+    except Exception:
+        exit('[-] Could not open %s' % pcap_file)
+    for pkt in pcap:
+        parser.pkt_sorter(pkt)
+    print ''
+    for k in parser.logins:
+        for v in parser.logins[k]:
+            print '%s: %s' % (k, v)
+    exit('[*] Finished parsing pcap file')
+
+def iface_finder():
+    try:
+        ipr = Popen(['/sbin/ip', 'route'], stdout=PIPE, stderr=DN)
+        for line in ipr.communicate()[0].splitlines():
+            if 'default' in line:
+                l = line.split()
+                iface = l[4]
+                return iface
+    except Exception:
+        exit('[-] Could not find an internet active interface; please specify one with -i <interface>')
+
 
 ##################################################
 #                     MAIN                       #
 ##################################################
 def main(args):
 
-    parser = Parser(args)
-
     # Read from pcap file
     if args.pcap:
-        pcap = rdpcap(args.pcap)
-        for pkt in pcap:
-            parser.pkt_sorter(pkt)
-        print ''
-        for k in parser.logins:
-            for v in parser.logins[k]:
-                print '%s: %s' % (k, v)
-        exit('[*] Finished parsing pcap file')
+        pcap_parser(args.pcap)
 
+    # Check for root
     if geteuid():
-        exit('[-] Please run as root for reading from interface')
+        exit('[-] Please run as root')
 
-    if args.interface:
-       conf.iface = args.interface
+    parser = Parser(args)
+
     #Find the active interface
+    if args.interface:
+        conf.iface = args.interface
     else:
-        try:
-            ipr = Popen(['/sbin/ip', 'route'], stdout=PIPE, stderr=DN)
-            for line in ipr.communicate()[0].splitlines():
-                if 'default' in line:
-                    l = line.split()
-                    conf.iface = l[4]
-                    break
-        except Exception:
-            exit('[-] Could not find an internet active interface; please specify one with -i <interface>')
+        conf.iface = iface_finder()
+
     print '[*] Listening on %s, if you wish to change this specify the interface with the -i argument' % conf.iface
 
     def signal_handler(signal, frame):
@@ -416,4 +423,3 @@ def main(args):
 
 if __name__ == "__main__":
    main(parse_args())
-
