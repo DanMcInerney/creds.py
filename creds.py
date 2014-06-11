@@ -361,9 +361,11 @@ class Parser:
             ircquit = load.strip('QUIT :')
             print '[%s > %s] IRC quit: %s' % (self.src, self.dest, ircquit)
 
-def pcap_parser(pcap_file):
+def pcap_parser(pcap_file, parser):
+    parser = parser
+
     try:
-        pcap = rdpcap(args.pcap)
+        pcap = rdpcap(pcap_file)
     except Exception:
         exit('[-] Could not open %s' % pcap_file)
     for pkt in pcap:
@@ -391,15 +393,15 @@ def iface_finder():
 ##################################################
 def main(args):
 
+    parser = Parser(args)
+
     # Read from pcap file
     if args.pcap:
-        pcap_parser(args.pcap)
+        pcap_parser(args.pcap, parser)
 
     # Check for root
     if geteuid():
         exit('[-] Please run as root')
-
-    parser = Parser(args)
 
     #Find the active interface
     if args.interface:
