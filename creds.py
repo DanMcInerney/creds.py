@@ -207,17 +207,18 @@ class Parser:
         if url:
             self.url_printer(url, post)
 
+            # Print search terms
+            searched = self.searches(url, host)
+            if searched:
+                print '[%s] Searched %s: %s' % (self.src, host, searched)
+
+
         if post:
             if self.body != '' and 'ocsp' not in host:
                 if self.fragged:
                     print '[%s] POST load (frag): %s' % (self.src, self.body)
                 else:
                     print '[%s] POST load: %s' % (self.src, self.body)
-
-        # Print search terms
-        searched = self.searches(url, host)
-        if searched:
-            print '[%s] Searched %s: %s' % (self.src, host, searched)
 
         self.http_user_pass(host, port)
 
